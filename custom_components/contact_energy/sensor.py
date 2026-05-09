@@ -32,7 +32,9 @@ async def async_setup_entry(
     password = config_entry.data[CONF_PASSWORD]
     usage_days = config_entry.data.get(CONF_USAGE_DAYS, 10)
     api = ContactEnergyApi(email, password)
-    async_add_entities([ContactEnergyUsageSensor(SENSOR_USAGE_NAME, api, usage_days, email)], True)
+    async_add_entities(
+        [ContactEnergyUsageSensor(SENSOR_USAGE_NAME, api, usage_days, email)], True
+    )
 
 
 class ContactEnergyUsageSensor(SensorEntity):

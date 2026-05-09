@@ -22,7 +22,10 @@ EMAIL = os.environ.get("CONTACT_ENERGY_EMAIL")
 PASSWORD = os.environ.get("CONTACT_ENERGY_PASSWORD")
 
 if not EMAIL or not PASSWORD:
-    print("ERROR: CONTACT_ENERGY_EMAIL and CONTACT_ENERGY_PASSWORD must be set", file=sys.stderr)
+    print(
+        "ERROR: CONTACT_ENERGY_EMAIL and CONTACT_ENERGY_PASSWORD must be set",
+        file=sys.stderr,
+    )
     sys.exit(1)
 
 URL_BASE = "https://api.contact-digital-prod.net"
@@ -31,9 +34,9 @@ HEADERS_BASE = {"x-api-key": API_KEY}
 
 
 def step(label):
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  {label}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
 
 def dump(data):
@@ -125,16 +128,31 @@ if usage_data:
     dump(usage_data[0])
 
     print("\n--- All field names seen across all records ---")
-    all_keys = sorted({k for record in usage_data for k in record.keys()})
+    all_keys = sorted({k for record in usage_data for k in record})
     print(all_keys)
 
     print("\n--- Sample values for key fields (first non-null per field) ---")
-    interesting = ["value", "offpeakValue", "dollarValue", "offpeakDollarValue",
-                   "unchargedValue", "currency", "unit", "percentage", "date", "timezone"]
+    interesting = [
+        "value",
+        "offpeakValue",
+        "dollarValue",
+        "offpeakDollarValue",
+        "unchargedValue",
+        "currency",
+        "unit",
+        "percentage",
+        "date",
+        "timezone",
+    ]
     for field in interesting:
-        sample = next((r[field] for r in usage_data if field in r and r[field] is not None), "NOT FOUND")
+        sample = next(
+            (r[field] for r in usage_data if field in r and r[field] is not None),
+            "NOT FOUND",
+        )
         print(f"  {field}: {sample!r}")
 else:
-    print("No usage data returned for yesterday — try a different date or check the account")
+    print(
+        "No usage data returned for yesterday — try a different date or check the account"
+    )
     print("\nRaw response:")
     dump(usage_data)
