@@ -36,7 +36,7 @@ class ContactEnergyApi:
             result = True
         else:
             _LOGGER.error(
-                "Failed to login - check the username and password are valid",
+                "Failed to login - check the username and password are valid: %s",
                 loginResult.text,
             )
             return False
@@ -58,7 +58,7 @@ class ContactEnergyApi:
             result = True
         else:
             _LOGGER.error(
-                "Failed to refresh session - check the username and password are valid",
+                "Failed to refresh session - check the username and password are valid: %s",
                 loginResult.text,
             )
             return False
@@ -82,26 +82,12 @@ class ContactEnergyApi:
     def get_usage(self, year, month, day):
         """Update our usage data."""
         headers = {"x-api-key": self._api_key, "authorization": self._api_token}
-        response = requests.post(
-            self._url_base
-            + "/usage/v2/"
-            + self._contractId
-            + "?ba="
-            + self._accountId
-            + "&interval=hourly&from="
-            + year
-            + "-"
-            + (month.zfill(2))
-            + "-"
-            + (day.zfill(2))
-            + "&to="
-            + year
-            + "-"
-            + (month.zfill(2))
-            + "-"
-            + (day.zfill(2)),
-            headers=headers,
+        date = f"{year}-{str(month).zfill(2)}-{str(day).zfill(2)}"
+        url = (
+            f"{self._url_base}/usage/v2/{self._contractId}"
+            f"?ba={self._accountId}&interval=hourly&from={date}&to={date}"
         )
+        response = requests.post(url, headers=headers)
         data = {}
         if response.status_code == requests.codes.ok:
             data = response.json()

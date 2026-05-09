@@ -10,7 +10,7 @@ from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import CONF_EMAIL, CONF_PASSWORD, UnitOfEnergy
 from homeassistant.components.sensor import SensorEntity
 
-from homeassistant.components.recorder.models import StatisticData, StatisticMetaData
+from homeassistant.components.recorder.models import StatisticData, StatisticMetaData, StatisticMeanType
 from homeassistant.components.recorder.statistics import (
     async_add_external_statistics,
 )
@@ -148,7 +148,7 @@ class ContactEnergyUsageSensor(SensorEntity):
         for i in range(self._usage_days):
             previous_day = today - timedelta(days=self._usage_days - i)
             response = self._api.get_usage(
-                str(previous_day.year), str(previous_day.month), str(previous_day.day)
+                previous_day.year, previous_day.month, previous_day.day
             )
             if response and response[0]:
                 for point in response:
@@ -181,20 +181,24 @@ class ContactEnergyUsageSensor(SensorEntity):
 
         kWhMetadata = StatisticMetaData(
             has_mean=False,
+            mean_type=StatisticMeanType.NONE,
             has_sum=True,
             name="ContactEnergy",
             source=DOMAIN,
             statistic_id=f"{DOMAIN}:energy_consumption",
             unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+            unit_class="energy",
         )
         async_add_external_statistics(self.hass, kWhMetadata, kWhStatistics)
 
         freeKWHMetadata = StatisticMetaData(
             has_mean=False,
+            mean_type=StatisticMeanType.NONE,
             has_sum=True,
             name="FreeContactEnergy",
             source=DOMAIN,
             statistic_id=f"{DOMAIN}:free_energy_consumption",
             unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+            unit_class="energy",
         )
         async_add_external_statistics(self.hass, freeKWHMetadata, freeKWhStatistics)

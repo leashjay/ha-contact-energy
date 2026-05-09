@@ -4,17 +4,30 @@ set -e
 
 cd "$(dirname "$0")/.."
 
+# Load credentials from .env if present
+if [[ -f "${PWD}/.env" ]]; then
+    set -o allexport
+    # shellcheck disable=SC1091
+    source "${PWD}/.env"
+    set +o allexport
+fi
+
 # Create config dir if not present
 if [[ ! -d "${PWD}/config" ]]; then
     mkdir -p "${PWD}/config"
     hass --config "${PWD}/config" --script ensure_config
 fi
 
+# Write secrets.yaml from environment variables if credentials are set
+if [[ -n "${CONTACT_ENERGY_EMAIL}" && -n "${CONTACT_ENERGY_PASSWORD}" ]]; then
+    cat > "${PWD}/config/secrets.yaml" <<EOF
+contact_energy_email: "${CONTACT_ENERGY_EMAIL}"
+contact_energy_password: "${CONTACT_ENERGY_PASSWORD}"
+EOF
+fi
+
 # Set the path to custom_components
-## This let's us have the structure we want <root>/custom_components/integration_blueprint
-## while at the same time have Home Assistant configuration inside <root>/config
-## without resulting to symlinks.
-export PYTHONPATH="${PYTHONPATH}:${PWD}/custom_components"
+export PYTHONPATH="${PYTHONPATH}:${PWD}"
 
 # Start Home Assistant
 hass --config "${PWD}/config" --debug
