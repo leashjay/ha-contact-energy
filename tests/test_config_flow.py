@@ -2,8 +2,6 @@
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
-
 from custom_components.contact_energy.config_flow import ContactEnergyConfigFlow
 from custom_components.contact_energy.const import DOMAIN
 

@@ -13,12 +13,20 @@ def _make_sensor(usage_days=1, email="user@example.com"):
     sensor = ContactEnergyUsageSensor("Contact Energy Usage", api, usage_days, email)
     sensor.hass = MagicMock()
     # async_add_executor_job calls the given function with its args synchronously
-    sensor.hass.async_add_executor_job = AsyncMock(side_effect=lambda f, *args: f(*args))
+    sensor.hass.async_add_executor_job = AsyncMock(
+        side_effect=lambda f, *args: f(*args)
+    )
     return sensor, api
 
 
 def _point(value, offpeak="0.12", date="2026-05-01T00:00:00.000+1200"):
-    return {"date": date, "value": value, "offpeakValue": offpeak, "dollarValue": "0.10", "currency": "NZD"}
+    return {
+        "date": date,
+        "value": value,
+        "offpeakValue": offpeak,
+        "dollarValue": "0.10",
+        "currency": "NZD",
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -131,8 +139,20 @@ class TestUpdateStatistics:
     async def test_dollar_stats_accumulate_for_paid_hours(self, mock_stats):
         sensor, api = _make_sensor(usage_days=1)
         api.get_usage.return_value = [
-            {"date": "2026-05-01T00:00:00.000+1200", "value": "1.0", "offpeakValue": "0.00", "dollarValue": "0.50", "currency": "NZD"},
-            {"date": "2026-05-01T01:00:00.000+1200", "value": "2.0", "offpeakValue": "0.00", "dollarValue": "1.00", "currency": "NZD"},
+            {
+                "date": "2026-05-01T00:00:00.000+1200",
+                "value": "1.0",
+                "offpeakValue": "0.00",
+                "dollarValue": "0.50",
+                "currency": "NZD",
+            },
+            {
+                "date": "2026-05-01T01:00:00.000+1200",
+                "value": "2.0",
+                "offpeakValue": "0.00",
+                "dollarValue": "1.00",
+                "currency": "NZD",
+            },
         ]
 
         await sensor.async_update()
@@ -172,7 +192,13 @@ class TestUpdateStatistics:
     async def test_skips_points_with_falsy_value(self, mock_stats):
         sensor, api = _make_sensor(usage_days=1)
         api.get_usage.return_value = [
-            {"date": "2026-05-01T00:00:00.000+1200", "value": None, "offpeakValue": "0.00", "dollarValue": "0", "currency": "NZD"},
+            {
+                "date": "2026-05-01T00:00:00.000+1200",
+                "value": None,
+                "offpeakValue": "0.00",
+                "dollarValue": "0",
+                "currency": "NZD",
+            },
             _point("2.0", offpeak="0.00"),
         ]
 
@@ -209,7 +235,13 @@ class TestUpdateStatistics:
     async def test_currency_read_from_response(self, mock_stats):
         sensor, api = _make_sensor(usage_days=1)
         api.get_usage.return_value = [
-            {"date": "2026-05-01T00:00:00.000+1200", "value": "1.0", "offpeakValue": "0.00", "dollarValue": "0.50", "currency": "AUD"},
+            {
+                "date": "2026-05-01T00:00:00.000+1200",
+                "value": "1.0",
+                "offpeakValue": "0.00",
+                "dollarValue": "0.50",
+                "currency": "AUD",
+            },
         ]
 
         await sensor.async_update()

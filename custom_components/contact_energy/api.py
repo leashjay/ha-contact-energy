@@ -71,12 +71,17 @@ class ContactEnergyApi:
             self._accountId = data["accounts"][0]["id"]
             self._contractId = data["accounts"][0]["contracts"][0]["contractId"]
         else:
-            _LOGGER.error("Failed to fetch customer accounts: HTTP %s", result.status_code)
+            _LOGGER.error(
+                "Failed to fetch customer accounts: HTTP %s", result.status_code
+            )
             return False
 
     def get_usage(self, year, month, day):
         """Fetch hourly usage data for a single day."""
-        headers = {"x-api-key": CONTACT_ENERGY_API_KEY, "authorization": self._api_token}
+        headers = {
+            "x-api-key": CONTACT_ENERGY_API_KEY,
+            "authorization": self._api_token,
+        }
         date = f"{year}-{str(month).zfill(2)}-{str(day).zfill(2)}"
         url = (
             f"{self._url_base}/usage/v2/{self._contractId}"
