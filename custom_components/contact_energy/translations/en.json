@@ -1,0 +1,22 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Contact Energy",
+                "description": "Enter your Contact Energy account credentials.",
+                "data": {
+                    "email": "Email address",
+                    "password": "Password",
+                    "usage_days": "Days of usage history to fetch"
+                }
+            }
+        },
+        "error": {
+            "invalid_auth": "Invalid email address or password.",
+            "cannot_connect": "Unable to connect to the Contact Energy API. Check your internet connection."
+        },
+        "abort": {
+            "already_configured": "This Contact Energy account is already configured."
+        }
+    }
+}
