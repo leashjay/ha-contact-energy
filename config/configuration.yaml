@@ -6,9 +6,3 @@ logger:
   default: info
   logs:
     custom_components.contact_energy: debug
-
-sensor:
-  - platform: contact_energy
-    email: !secret contact_energy_email
-    password: !secret contact_energy_password
-    usage_days: 10
