@@ -81,6 +81,39 @@ class TestGetAccounts:
         assert api._contractId == 22222
 
     @patch("custom_components.contact_energy.api.requests.get")
+    def test_no_second_contract_leaves_gas_contract_id_empty(self, mock_get, api):
+        mock_get.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {
+                "accounts": [{"id": 11111, "contracts": [{"contractId": 22222}]}]
+            },
+        )
+        api.get_accounts()
+
+        assert api._gas_contract_id == ""
+
+    @patch("custom_components.contact_energy.api.requests.get")
+    def test_second_contract_stored_as_gas_contract_id(self, mock_get, api):
+        mock_get.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {
+                "accounts": [
+                    {
+                        "id": 11111,
+                        "contracts": [
+                            {"contractId": 22222},
+                            {"contractId": 33333},
+                        ],
+                    }
+                ]
+            },
+        )
+        api.get_accounts()
+
+        assert api._contractId == 22222
+        assert api._gas_contract_id == 33333
+
+    @patch("custom_components.contact_energy.api.requests.get")
     def test_failure_returns_false(self, mock_get, api):
         mock_get.return_value = MagicMock(status_code=500, text="Error")
         assert api.get_accounts() is False
@@ -179,3 +212,69 @@ class TestGetUsage:
 
         headers = mock_post.call_args[1]["headers"]
         assert headers["authorization"] == "mytoken"
+
+
+# ---------------------------------------------------------------------------
+# get_gas_usage()
+# ---------------------------------------------------------------------------
+
+
+class TestGetGasUsage:
+    def _make_api(self, gas_contract_id=54321, account_id=67890):
+        a = ContactEnergyApi("u@example.com", "p")
+        a._gas_contract_id = gas_contract_id
+        a._accountId = account_id
+        a._api_token = "token"
+        return a
+
+    def test_no_gas_contract_returns_false(self):
+        api = ContactEnergyApi("u@example.com", "p")
+        api._gas_contract_id = ""
+        assert api.get_gas_usage("2025-07-01", "2026-09-01") is False
+
+    @patch("custom_components.contact_energy.api.requests.post")
+    def test_success_returns_data(self, mock_post):
+        payload = [{"date": "2025-07-01T00:00:00.000+12:00", "value": "733.543"}]
+        mock_post.return_value = MagicMock(status_code=200, json=lambda: payload)
+
+        result = self._make_api().get_gas_usage("2025-07-01", "2026-09-01")
+
+        assert result == payload
+
+    @patch("custom_components.contact_energy.api.requests.post")
+    def test_failure_returns_false(self, mock_post):
+        mock_post.return_value = MagicMock(status_code=500)
+        assert self._make_api().get_gas_usage("2025-07-01", "2026-09-01") is False
+
+    @patch("custom_components.contact_energy.api.requests.post")
+    def test_url_contains_gas_contract_and_account(self, mock_post):
+        mock_post.return_value = MagicMock(status_code=200, json=lambda: [])
+        api = self._make_api(gas_contract_id=99999, account_id=88888)
+        api.get_gas_usage("2025-07-01", "2026-09-01")
+
+        url = mock_post.call_args[0][0]
+        assert "99999" in url
+        assert "88888" in url
+
+    @patch("custom_components.contact_energy.api.requests.post")
+    def test_interval_is_monthly(self, mock_post):
+        mock_post.return_value = MagicMock(status_code=200, json=lambda: [])
+        self._make_api().get_gas_usage("2025-07-01", "2026-09-01")
+
+        url = mock_post.call_args[0][0]
+        assert "interval=monthly" in url
+
+    @patch("custom_components.contact_energy.api.requests.post")
+    def test_from_and_to_dates_used_verbatim(self, mock_post):
+        mock_post.return_value = MagicMock(status_code=200, json=lambda: [])
+        self._make_api().get_gas_usage("2025-07-01", "2026-09-01")
+
+        url = mock_post.call_args[0][0]
+        assert "from=2025-07-01" in url
+        assert "to=2026-09-01" in url
+
+    @patch("custom_components.contact_energy.api.requests.post")
+    def test_empty_response_returns_empty_list(self, mock_post):
+        mock_post.return_value = MagicMock(status_code=200, json=lambda: [])
+        result = self._make_api().get_gas_usage("2025-07-01", "2026-09-01")
+        assert result == []

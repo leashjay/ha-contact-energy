@@ -3,11 +3,13 @@
         "step": {
             "user": {
                 "title": "Contact Energy",
-                "description": "Enter your Contact Energy account credentials.",
+                "description": "Enter your Contact Energy account credentials. \"Days of usage history\" is a one-time historical backfill target — recent days are kept up to date automatically afterwards, regardless of this value.",
                 "data": {
                     "email": "Email address",
                     "password": "Password",
-                    "usage_days": "Days of usage history to fetch"
+                    "usage_days": "Days of usage history to backfill",
+                    "enable_gas": "Enable gas usage tracking",
+                    "gas_price_per_kwh": "Gas price per kWh ($) — leave at 0 to skip gas cost tracking"
                 }
             }
         },
@@ -17,6 +19,19 @@
         },
         "abort": {
             "already_configured": "This Contact Energy account is already configured."
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Contact Energy options",
+                "description": "Change how much usage history to backfill, or enable gas tracking. \"Days of usage history\" is a one-time backfill target, not how much is fetched on each update — recent days are kept up to date automatically regardless of this value. Increasing it re-fetches the extra history in the background.",
+                "data": {
+                    "usage_days": "Days of usage history to backfill",
+                    "enable_gas": "Enable gas usage tracking",
+                    "gas_price_per_kwh": "Gas price per kWh ($) — leave at 0 to skip gas cost tracking"
+                }
+            }
         }
     }
 }
