@@ -12,6 +12,8 @@ __pycache__
 coverage.xml
 .env
 .claude/
+.venv
+raw_data/
 
 
 # Home Assistant configuration
