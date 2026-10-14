@@ -1,0 +1,8 @@
+# Every change needs a review request to the maintainer. With branch protection's
+# "require review from Code Owners" this makes an owner's approval mandatory.
+*                       @leashjay
+
+# Extra care: anything that runs in CI or ships in a release, and the code that
+# handles the user's Contact Energy login.
+/.github/               @leashjay
+/custom_components/     @leashjay
