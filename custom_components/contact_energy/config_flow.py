@@ -5,13 +5,15 @@ from homeassistant import config_entries
 from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
 
 from .api import ContactEnergyApi
-from .const import CONF_USAGE_DAYS, DOMAIN
+from .const import CONF_USAGE_DAYS, DEFAULT_USAGE_DAYS, DOMAIN, MAX_USAGE_DAYS
 
 _SETUP_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_EMAIL): str,
         vol.Required(CONF_PASSWORD): str,
-        vol.Optional(CONF_USAGE_DAYS, default=10): int,
+        vol.Optional(CONF_USAGE_DAYS, default=DEFAULT_USAGE_DAYS): vol.All(
+            int, vol.Range(min=1, max=MAX_USAGE_DAYS)
+        ),
     }
 )
 
