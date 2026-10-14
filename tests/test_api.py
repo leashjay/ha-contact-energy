@@ -179,3 +179,100 @@ class TestGetUsage:
 
         headers = mock_post.call_args[1]["headers"]
         assert headers["authorization"] == "mytoken"
+
+
+# ---------------------------------------------------------------------------
+# Failures must come back as False, never as exceptions
+# ---------------------------------------------------------------------------
+
+
+class TestNetworkAndBadResponses:
+    @patch("custom_components.contact_energy.api.requests.post")
+    def test_login_network_error_returns_false(self, mock_post, api):
+        import requests
+
+        mock_post.side_effect = requests.ConnectionError("boom")
+        assert api.login() is False
+
+    @patch("custom_components.contact_energy.api.requests.post")
+    def test_login_without_token_in_response_returns_false(self, mock_post, api):
+        mock_post.return_value = MagicMock(status_code=200, json=lambda: {})
+        assert api.login() is False
+        assert api._api_token == ""
+
+    @patch("custom_components.contact_energy.api.requests.post")
+    def test_refresh_network_error_returns_false(self, mock_post, api):
+        import requests
+
+        mock_post.side_effect = requests.Timeout("slow")
+        assert api.refresh_session() is False
+
+    @patch("custom_components.contact_energy.api.requests.get")
+    def test_get_accounts_success_returns_true(self, mock_get, api):
+        mock_get.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {"accounts": [{"id": 1, "contracts": [{"contractId": 2}]}]},
+        )
+        assert api.get_accounts() is True
+
+    @patch("custom_components.contact_energy.api.requests.get")
+    def test_get_accounts_with_no_accounts_returns_false(self, mock_get, api):
+        mock_get.return_value = MagicMock(
+            status_code=200, json=lambda: {"accounts": []}
+        )
+        assert api.get_accounts() is False
+        assert api._contractId == ""
+
+    @patch("custom_components.contact_energy.api.requests.get")
+    def test_get_accounts_network_error_returns_false(self, mock_get, api):
+        import requests
+
+        mock_get.side_effect = requests.ConnectionError("boom")
+        assert api.get_accounts() is False
+
+    @patch("custom_components.contact_energy.api.requests.post")
+    def test_usage_network_error_returns_false(self, mock_post):
+        import requests
+
+        mock_post.side_effect = requests.ConnectionError("boom")
+        assert TestGetUsage()._make_api().get_usage(2026, 5, 1) is False
+
+    @patch("custom_components.contact_energy.api.requests.post")
+    def test_usage_invalid_json_returns_false(self, mock_post):
+        def bad():
+            raise ValueError("not json")
+
+        mock_post.return_value = MagicMock(status_code=200, json=bad)
+        assert TestGetUsage()._make_api().get_usage(2026, 5, 1) is False
+
+    @patch("custom_components.contact_energy.api.requests.post")
+    def test_usage_without_known_account_does_not_call_api(self, mock_post, api):
+        assert api.get_usage(2026, 5, 1) is False
+        mock_post.assert_not_called()
+
+    @pytest.mark.parametrize("status", [401, 403])
+    @patch("custom_components.contact_energy.api.requests.post")
+    def test_rejected_token_is_cleared_so_caller_logs_in_again(self, mock_post, status):
+        mock_post.return_value = MagicMock(status_code=status)
+        api = TestGetUsage()._make_api()
+
+        assert api.get_usage(2026, 5, 1) is False
+        assert api._api_token == ""
+
+    @patch("custom_components.contact_energy.api.requests.post")
+    def test_server_error_keeps_the_token(self, mock_post):
+        mock_post.return_value = MagicMock(status_code=500)
+        api = TestGetUsage()._make_api()
+
+        api.get_usage(2026, 5, 1)
+
+        assert api._api_token == "token"
+
+    @patch("custom_components.contact_energy.api.requests.post")
+    def test_network_error_text_is_not_logged(self, mock_post, api, caplog):
+        import requests
+
+        mock_post.side_effect = requests.ConnectionError("https://secret-url/?ba=123")
+        api.login()
+
+        assert "secret-url" not in caplog.text

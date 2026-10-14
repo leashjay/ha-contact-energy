@@ -2,7 +2,7 @@
 
 import sys
 from enum import Enum
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 
 class _UnitOfEnergy:
@@ -62,6 +62,15 @@ _recorder_models.StatisticMetaData = _StatisticMetaData
 _recorder_models.StatisticMeanType = _StatisticMeanType
 
 _recorder_stats = MagicMock()
+# No stored statistics by default; tests that need a baseline patch this.
+_recorder_stats.statistics_during_period = MagicMock(return_value={})
+
+
+class _RecorderInstance:
+    """Stands in for the recorder: runs executor jobs inline."""
+
+    async_add_executor_job = AsyncMock(side_effect=lambda f, *args: f(*args))
+
 
 _ha_const = MagicMock()
 _ha_const.CONF_EMAIL = "email"
@@ -75,6 +84,7 @@ _ha = MagicMock()
 _ha.components.sensor = _sensor_mod
 _ha.components.recorder.models = _recorder_models
 _ha.components.recorder.statistics = _recorder_stats
+_ha.components.recorder.get_instance = lambda hass: _RecorderInstance()
 _ha.const = _ha_const
 _ha.config_entries = _config_entries_mod
 _ha.core = _ha_core
