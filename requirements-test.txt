@@ -1,6 +1,6 @@
 # What CI needs to lint and test. Home Assistant itself is stubbed in the tests,
 # so it is not listed here (see requirements.txt for the full dev environment).
-pytest==8.3.5
-pytest-asyncio==0.24.0
-requests
-ruff==0.15.12
+pytest==9.1.1
+pytest-asyncio==1.4.0
+requests==2.34.2
+ruff==0.17.0

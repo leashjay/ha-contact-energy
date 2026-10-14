@@ -1,4 +1,4 @@
 # Full local development environment (dev container, scripts/develop).
 -r requirements-test.txt
-colorlog==6.8.0
-homeassistant==2026.5.1
+colorlog==6.12.0
+homeassistant==2026.10.1
