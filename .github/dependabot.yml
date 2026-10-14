@@ -1,0 +1,23 @@
+# Keeps the CI actions and the dev/test dependencies current. Updates arrive as
+# pull requests to review; nothing is merged automatically.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "ci"
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "deps"
+    groups:
+      dev-dependencies:
+        patterns: ["*"]
