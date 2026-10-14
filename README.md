@@ -18,7 +18,7 @@
 </div>
 
 > [!IMPORTANT]
-> **Unofficial.** This integration is not made, endorsed or supported by Contact Energy. It reads your usage from the same web service that the Contact Energy website uses, signing in with your own account, so Contact Energy could change it at any time and break this. Your email and password are stored in Home Assistant's own configuration storage, like any other integration, and are sent only to Contact Energy's servers. "Contact Energy" and its logo belong to Contact Energy Limited.
+> **Unofficial.** This integration is not made, endorsed or supported by Contact Energy. It reads your usage from the same web service that the Contact Energy website uses, signing in with your own account, so Contact Energy could change it at any time and break this. Your email and password are stored in Home Assistant's own configuration storage, like any other integration, and are sent only to Contact Energy's servers. "Contact Energy" is a trademark of Contact Energy Limited; the icon here is our own and is not their logo.
 
 **Contents:** [Features](#features) · [Install](#installation) · [Set up](#setup) · [Energy Dashboard](#energy-dashboard) · [How it works](#how-it-works) · [Upgrading](#upgrading-from-201-or-earlier) · [Troubleshooting](#troubleshooting) · [Contributing](#contributing)
 
