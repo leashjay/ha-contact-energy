@@ -22,6 +22,7 @@ class ContactEnergyApi:
         self._api_token = ""
         self._api_session = ""
         self._contractId = ""
+        self._gas_contract_id = ""
         self._accountId = ""
         self._url_base = "https://api.contact-digital-prod.net"
         self._email = email
@@ -96,12 +97,21 @@ class ContactEnergyApi:
             try:
                 data = result.json()
                 account_id = data["accounts"][0]["id"]
-                contract_id = data["accounts"][0]["contracts"][0]["contractId"]
+                contracts = data["accounts"][0]["contracts"]
+                contract_id = contracts[0]["contractId"]
             except ValueError, KeyError, IndexError, TypeError:
                 _LOGGER.error("Customer has no usable account or contract")
                 return False
             self._accountId = account_id
             self._contractId = contract_id
+            # The API has no field distinguishing electricity from gas
+            # contracts. A second contract on the account is assumed to be
+            # a gas meter (billed monthly, no per-point dollarValue) — see
+            # README.md's "Known issues" section.
+            try:
+                self._gas_contract_id = contracts[1]["contractId"]
+            except IndexError, KeyError, TypeError:
+                self._gas_contract_id = ""
             _LOGGER.debug("Retrieved accounts")
             return True
         _LOGGER.error("Failed to fetch customer accounts: HTTP %s", result.status_code)
@@ -158,6 +168,60 @@ class ContactEnergyApi:
             year,
             month,
             day,
+            response.status_code,
+        )
+        return False
+
+    def get_gas_usage(self, date_from, date_to):
+        """Fetch monthly gas usage data (kWh) for the gas contract, if present.
+
+        Gas meters are read monthly rather than hourly, and Contact Energy's
+        API does not return a dollarValue for gas usage points. Returns the
+        data, or False on any failure (a rejected token is cleared, as for
+        `get_usage`).
+        """
+        if not self._gas_contract_id or not self._accountId:
+            return False
+        headers = {
+            "x-api-key": CONTACT_ENERGY_API_KEY,
+            "authorization": self._api_token,
+        }
+        url = (
+            f"{self._url_base}/usage/v2/{self._gas_contract_id}"
+            f"?ba={self._accountId}&interval=monthly&from={date_from}&to={date_to}"
+        )
+        try:
+            response = requests.post(url, headers=headers, timeout=(10, 30))
+        except requests.RequestException as err:
+            _LOGGER.error(
+                "Failed to fetch gas usage for %s to %s: %s",
+                date_from,
+                date_to,
+                type(err).__name__,
+            )
+            return False
+        if response.status_code == requests.codes.ok:
+            try:
+                data = response.json()
+            except ValueError:
+                _LOGGER.error(
+                    "Failed to fetch gas usage for %s to %s: unexpected response",
+                    date_from,
+                    date_to,
+                )
+                return False
+            if not data:
+                _LOGGER.info(
+                    "No gas usage data returned for %s to %s", date_from, date_to
+                )
+            return data
+        if response.status_code in _AUTH_REJECTED:
+            _LOGGER.info("Login token rejected; will log in again")
+            self._api_token = ""
+        _LOGGER.error(
+            "Failed to fetch gas usage for %s to %s: HTTP %s",
+            date_from,
+            date_to,
             response.status_code,
         )
         return False
