@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="custom_components/contact_energy/brand/icon.png" alt="Contact Energy" width="96">
+<img src="https://raw.githubusercontent.com/leashjay/ha-contact-energy/main/custom_components/contact_energy/brand/icon@2x.png" alt="Contact Energy for Home Assistant" width="120">
 
 # Contact Energy for Home Assistant
 
@@ -16,6 +16,9 @@
 [![Add integration](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=contact_energy)
 
 </div>
+
+> [!IMPORTANT]
+> **Unofficial.** This integration is not made, endorsed or supported by Contact Energy. It reads your usage from the same web service that the Contact Energy website uses, signing in with your own account, so Contact Energy could change it at any time and break this. Your email and password are stored in Home Assistant's own configuration storage, like any other integration, and are sent only to Contact Energy's servers. "Contact Energy" is a trademark of Contact Energy Limited; the icon here is our own and is not their logo.
 
 **Contents:** [Features](#features) · [Install](#installation) · [Set up](#setup) · [Energy Dashboard](#energy-dashboard) · [How it works](#how-it-works) · [Upgrading](#upgrading-from-201-or-earlier) · [Troubleshooting](#troubleshooting) · [Contributing](#contributing)
 
