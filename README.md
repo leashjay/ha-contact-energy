@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="custom_components/contact_energy/brand/icon.png" alt="Contact Energy" width="96">
+<img src="https://raw.githubusercontent.com/leashjay/ha-contact-energy/main/custom_components/contact_energy/brand/icon@2x.png" alt="Contact Energy for Home Assistant" width="120">
 
 # Contact Energy for Home Assistant
 
