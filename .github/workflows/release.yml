@@ -1,35 +1,37 @@
-name: "Release"
+name: Release
 
 on:
   release:
-    types:
-      - "published"
+    types: [published]
 
 permissions: {}
 
 jobs:
   release:
-    name: "Release"
-    runs-on: "ubuntu-latest"
+    name: Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
-      contents: write
+      contents: write # upload the zip to the release
     steps:
-      - name: "Checkout the repository"
-        uses: "actions/checkout@v4.1.0"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - name: "Adjust version number"
-        shell: "bash"
+      - name: Set the version number from the release tag
+        env:
+          # Passed as an environment variable, never pasted into the script,
+          # so a tag name can't inject shell commands.
+          TAG: ${{ github.event.release.tag_name }}
         run: |
-          yq -i -o json '.version="${{ github.event.release.tag_name }}"' \
-            "${{ github.workspace }}/custom_components/contact_energy/manifest.json"
+          yq -i -o json '.version = strenv(TAG)' custom_components/contact_energy/manifest.json
 
-      - name: "ZIP the integration directory"
-        shell: "bash"
+      - name: Zip the integration
         run: |
-          cd "${{ github.workspace }}/custom_components/contact_energy"
+          cd custom_components/contact_energy
           zip contact_energy.zip -r ./
 
-      - name: "Upload the ZIP file to the release"
-        uses: softprops/action-gh-release@v0.1.15
+      - name: Upload the zip to the release
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
-          files: ${{ github.workspace }}/custom_components/contact_energy/contact_energy.zip
+          files: custom_components/contact_energy/contact_energy.zip
