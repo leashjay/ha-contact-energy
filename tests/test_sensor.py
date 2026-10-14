@@ -290,3 +290,218 @@ class TestUpdateStatistics:
 
         _, dollar_meta, _ = mock_stats.call_args_list[1][0]
         assert dollar_meta.unit_class is None
+
+
+# ---------------------------------------------------------------------------
+# async_update() — carrying on from the stored running total
+# ---------------------------------------------------------------------------
+
+_STATS = "custom_components.contact_energy.sensor.async_add_external_statistics"
+_DURING = "custom_components.contact_energy.sensor.statistics_during_period"
+
+
+def _stored(kwh=None, dollars=None, free=None):
+    """What statistics_during_period returns for the hour before the window."""
+    rows = {}
+    for statistic_id, total in (
+        ("contact_energy:energy_consumption", kwh),
+        ("contact_energy:energy_consumption_dollars", dollars),
+        ("contact_energy:free_energy_consumption", free),
+    ):
+        if total is not None:
+            rows[statistic_id] = [
+                {"start": 0.0, "sum": 1.0},
+                {"start": 1.0, "sum": total},
+            ]
+    return rows
+
+
+class TestBaselineSums:
+    """Regression: a refresh restarted its totals at zero, so the oldest refreshed
+    day was stored as negative usage (e.g. -7.97 kWh)."""
+
+    @patch(_DURING)
+    @patch(_STATS)
+    async def test_sums_continue_from_stored_total(self, mock_stats, mock_during):
+        mock_during.return_value = _stored(kwh=100.0, dollars=50.0, free=20.0)
+        sensor, api = _make_sensor(usage_days=1)
+        api.get_usage.return_value = [
+            _point("2.0", offpeak="0.00"),
+            _point("3.0", offpeak="1.0", date="2026-05-01T01:00:00.000+1200"),
+        ]
+
+        await sensor.async_update()
+
+        _, _, kwh = mock_stats.call_args_list[0][0]
+        _, _, dollars = mock_stats.call_args_list[1][0]
+        _, _, free = mock_stats.call_args_list[2][0]
+        assert kwh[0].sum == pytest.approx(102.0)
+        assert dollars[0].sum == pytest.approx(50.10)
+        assert free[0].sum == pytest.approx(23.0)
+
+    @patch(_DURING)
+    @patch(_STATS)
+    async def test_first_refreshed_hour_is_never_below_stored_total(
+        self, mock_stats, mock_during
+    ):
+        mock_during.return_value = _stored(kwh=24.3)
+        sensor, api = _make_sensor(usage_days=1)
+        api.get_usage.return_value = [_point("0.5", offpeak="0.00")]
+
+        await sensor.async_update()
+
+        _, _, kwh = mock_stats.call_args_list[0][0]
+        assert kwh[0].sum - 24.3 == pytest.approx(0.5)  # change is positive
+
+    @patch(_DURING)
+    @patch(_STATS)
+    async def test_no_stored_total_starts_from_zero(self, mock_stats, mock_during):
+        mock_during.return_value = {}
+        sensor, api = _make_sensor(usage_days=1)
+        api.get_usage.return_value = [_point("2.0", offpeak="0.00")]
+
+        await sensor.async_update()
+
+        _, _, kwh = mock_stats.call_args_list[0][0]
+        assert kwh[0].sum == pytest.approx(2.0)
+
+    @patch(_DURING)
+    @patch(_STATS)
+    async def test_baseline_is_read_before_the_first_refreshed_hour(
+        self, mock_stats, mock_during
+    ):
+        mock_during.return_value = {}
+        sensor, api = _make_sensor(usage_days=1)
+        api.get_usage.return_value = [
+            _point("1.0", offpeak="0.00", date="2026-05-01T05:00:00.000+1200"),
+            _point("1.0", offpeak="0.00", date="2026-05-01T03:00:00.000+1200"),
+        ]
+
+        await sensor.async_update()
+
+        args = mock_during.call_args[0]
+        window_start = _parse("2026-05-01T03:00:00.000+1200")
+        assert args[2] == window_start  # end_time: the earliest refreshed hour
+        assert args[3] == {
+            "contact_energy:energy_consumption",
+            "contact_energy:energy_consumption_dollars",
+            "contact_energy:free_energy_consumption",
+        }
+        assert args[4] == "hour"
+        assert args[6] == {"sum"}
+
+    @patch(_DURING)
+    @patch(_STATS)
+    async def test_stored_rows_without_a_sum_are_ignored(self, mock_stats, mock_during):
+        mock_during.return_value = {
+            "contact_energy:energy_consumption": [
+                {"start": 0.0, "sum": 7.0},
+                {"start": 1.0, "sum": None},
+            ]
+        }
+        sensor, api = _make_sensor(usage_days=1)
+        api.get_usage.return_value = [_point("1.0", offpeak="0.00")]
+
+        await sensor.async_update()
+
+        _, _, kwh = mock_stats.call_args_list[0][0]
+        assert kwh[0].sum == pytest.approx(8.0)
+
+    @patch(_DURING)
+    @patch(_STATS)
+    async def test_no_usage_means_no_baseline_lookup(self, mock_stats, mock_during):
+        sensor, api = _make_sensor(usage_days=1)
+        api.get_usage.return_value = []
+
+        await sensor.async_update()
+
+        mock_during.assert_not_called()
+        assert mock_stats.call_count == 3
+
+
+def _parse(text):
+    from datetime import datetime
+
+    return datetime.strptime(text, "%Y-%m-%dT%H:%M:%S.%f%z")
+
+
+# ---------------------------------------------------------------------------
+# async_update() — bad data and expired logins
+# ---------------------------------------------------------------------------
+
+
+class TestRobustness:
+    @patch(_STATS)
+    async def test_unreadable_point_is_skipped_not_fatal(self, mock_stats):
+        sensor, api = _make_sensor(usage_days=1)
+        api.get_usage.return_value = [
+            {
+                "date": "not a date",
+                "value": "1.0",
+                "offpeakValue": "0.00",
+                "dollarValue": "0.1",
+            },
+            {
+                "date": "2026-05-01T00:00:00.000+1200",
+                "value": "abc",
+                "offpeakValue": "0.00",
+            },
+            _point("2.0", offpeak="0.00"),
+        ]
+
+        await sensor.async_update()
+
+        _, _, kwh = mock_stats.call_args_list[0][0]
+        assert [d.sum for d in kwh] == pytest.approx([2.0])
+
+    @patch(_STATS)
+    async def test_logs_in_again_when_token_was_rejected(self, mock_stats):
+        sensor, api = _make_sensor(usage_days=1)
+
+        def get_usage(*args):
+            return [_point("1.0", offpeak="0.00")] if api._api_token else False
+
+        def login():
+            api._api_token = "fresh"
+            return True
+
+        api._api_token = "stale"
+        api.get_usage.side_effect = lambda *a: (
+            api.__setattr__("_api_token", "") or False
+            if api._api_token == "stale"
+            else get_usage(*a)
+        )
+        api.login.side_effect = login
+
+        await sensor.async_update()
+
+        api.login.assert_called_once()
+        _, _, kwh = mock_stats.call_args_list[0][0]
+        assert len(kwh) == 1
+
+    @patch(_STATS)
+    async def test_does_not_retry_a_refused_login_for_every_day(self, mock_stats):
+        sensor, api = _make_sensor(usage_days=5)
+
+        def rejected(*args):
+            api._api_token = ""
+            return False
+
+        api.get_usage.side_effect = rejected
+        api.login.return_value = False
+
+        await sensor.async_update()
+
+        assert api.login.call_count == 1
+
+    @patch(_STATS)
+    async def test_logs_in_when_account_was_never_found(self, mock_stats):
+        sensor, api = _make_sensor(usage_days=1)
+        api._api_token = "token"
+        api._contractId = ""
+        api.login.return_value = True
+        api.get_usage.return_value = []
+
+        await sensor.async_update()
+
+        api.login.assert_called_once()
