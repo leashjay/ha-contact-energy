@@ -29,7 +29,7 @@ body:
   - type: input
     attributes:
       label: Integration version
-      description: "Found in **Settings → Devices & Services → Contact Energy → ⋮ → Integration manifest**, or in HACS."
+      description: "Found in **Settings → Devices & Services → Contact Energy → ⋮ → Integration manifest**, or in the Marketplace (or HACS on older Home Assistant)."
       placeholder: "e.g. 2.0.0"
     validations:
       required: true

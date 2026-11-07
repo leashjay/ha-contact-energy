@@ -8,11 +8,9 @@
 
 [![CI](https://github.com/leashjay/ha-contact-energy/actions/workflows/ci.yml/badge.svg)](https://github.com/leashjay/ha-contact-energy/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/leashjay/ha-contact-energy)](https://github.com/leashjay/ha-contact-energy/releases/latest)
-[![HACS: Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2026.5%2B-blue.svg)](https://www.home-assistant.io)
 [![License: MIT](https://img.shields.io/github/license/leashjay/ha-contact-energy)](LICENSE)
 
-[![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=leashjay&repository=ha-contact-energy&category=integration)
 [![Add integration](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=contact_energy)
 
 </div>
@@ -39,10 +37,20 @@
 
 ## Installation
 
-### Via HACS (recommended)
+### Via the Marketplace (recommended)
+
+The Marketplace is built into Home Assistant **2026.11** and later, and replaces HACS. If you already installed this through HACS, Home Assistant moved it across when you updated: there is nothing to do.
+
+1. Go to **Settings → Marketplace** and accept the notice the first time.
+2. Open the **⋮ menu → Add from link** and enter `https://github.com/leashjay/ha-contact-energy` (this needs a GitHub connection, which uses GitHub's device sign-in).
+3. Select **Contact Energy**, then **Install**. The setup page opens straight away.
+
+Updates appear under **Settings → Updates**, and a repair offers to restart Home Assistant when one needs it.
+
+### Via HACS (Home Assistant before 2026.11)
 
 1. Install [HACS](https://hacs.xyz/docs/use/download/download/) if you haven't already.
-2. Click **Open in HACS** above, or go to **HACS → ⋮ → Custom repositories** and add `https://github.com/leashjay/ha-contact-energy` as an **Integration**.
+2. Go to **HACS → ⋮ → Custom repositories** and add `https://github.com/leashjay/ha-contact-energy` as an **Integration**.
 3. Click **Download** on the **Contact Energy** card.
 4. Restart Home Assistant.
 
@@ -138,7 +146,7 @@ Older versions also exposed a "Contact Energy Usage" sensor with a `total` state
 - [ ] Solar / feed-in (exported energy) tracking
 - [ ] Pricing / tariff sensors
 - [ ] Multi-account support
-- [ ] HACS default store submission
+- [ ] Listing in the Marketplace catalog (so it no longer needs *Add from link*)
 
 ## Contributing
 
