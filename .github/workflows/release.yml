@@ -24,7 +24,13 @@ jobs:
           # so a tag name can't inject shell commands.
           TAG: ${{ github.event.release.tag_name }}
         run: |
-          yq -i -o json '.version = strenv(TAG)' custom_components/contact_energy/manifest.json
+          # Tags are v2.1.1 (or V2.1.1); the manifest wants a bare 2.1.1.
+          VERSION="${TAG#[vV]}"
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Tag '$TAG' is not vMAJOR.MINOR.PATCH" >&2
+            exit 1
+          fi
+          VERSION="$VERSION" yq -i -o json '.version = strenv(VERSION)' custom_components/contact_energy/manifest.json
 
       - name: Zip the integration
         run: |
