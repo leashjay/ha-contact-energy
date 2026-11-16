@@ -132,13 +132,13 @@ Older versions also exposed a "Contact Energy Usage" sensor with a `total` state
 | The **Contact Energy Usage** entity shows `0` or is hidden | Expected. The data is in statistics, not in the entity. See [How it works](#how-it-works) |
 | No data for today or yesterday | Contact Energy publishes about 2 days late |
 | "Invalid email address or password" | Check you can sign in at myaccount.contact.co.nz |
-| Gas shows no data | Gas tracking is off by default; turn it on in **Configure**. Gas is detected as the account's **second contract** (see below) |
+| Gas shows no data | Gas tracking is off by default; turn it on in **Configure**. Gas is detected as the account's contract that is not electricity (see below) |
 | Older days look too low after upgrading | Raise **Days of usage history** in **Configure** to backfill them (see [Upgrading](#upgrading-from-201-or-earlier)) |
 
 ### Known limitations
 
-- **Gas contract detection is a heuristic.** The API gives no field for a contract's fuel type, so a second contract alongside the electricity one is assumed to be gas. If yours is something else (for example a second meter), gas tracking may create a sensor with no data, or fail quietly. Please open an issue if you hit this.
-- **One account only:** the first account on your login, and its first contract for electricity.
+- **Gas contract detection is a heuristic.** The API gives no field for a contract's fuel type, and on some dual-fuel accounts gas is listed first. The integration takes the contract that serves hourly usage as electricity and the other as gas, falling back to the listed order if neither answers. If yours is something else (for example a second meter), gas tracking may create a sensor with no data, or fail quietly. Please open an issue if you hit this.
+- **One account only:** the first account on your login.
 - **Gas is monthly.** The Energy Dashboard shows each month's gas as one spike at the start of the month, not spread over the days.
 
 ## Roadmap
