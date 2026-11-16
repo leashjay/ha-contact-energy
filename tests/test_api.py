@@ -92,8 +92,12 @@ class TestGetAccounts:
 
         assert api._gas_contract_id == ""
 
+    @patch(
+        "custom_components.contact_energy.api.requests.post",
+        return_value=MagicMock(status_code=502),
+    )
     @patch("custom_components.contact_energy.api.requests.get")
-    def test_second_contract_stored_as_gas_contract_id(self, mock_get, api):
+    def test_second_contract_stored_as_gas_contract_id(self, mock_get, _mock_post, api):
         mock_get.return_value = MagicMock(
             status_code=200,
             json=lambda: {
@@ -439,8 +443,12 @@ class TestGasContractDetection:
             json=lambda: {"accounts": [{"id": 1, "contracts": contracts}]},
         )
 
+    @patch(
+        "custom_components.contact_energy.api.requests.post",
+        return_value=MagicMock(status_code=502),
+    )
     @patch("custom_components.contact_energy.api.requests.get")
-    def test_second_contract_is_taken_as_gas(self, mock_get, api):
+    def test_second_contract_is_taken_as_gas(self, mock_get, _mock_post, api):
         mock_get.return_value = self._accounts([{"contractId": 10}, {"contractId": 20}])
         assert api.get_accounts() is True
         assert (api._contractId, api._gas_contract_id) == (10, 20)
@@ -457,3 +465,33 @@ class TestGasContractDetection:
         assert api.get_accounts() is True
         assert api._contractId == 10
         assert api._gas_contract_id == ""
+
+    @patch("custom_components.contact_energy.api.requests.post")
+    @patch("custom_components.contact_energy.api.requests.get")
+    def test_gas_listed_first_is_detected_by_probe(self, mock_get, mock_post, api):
+        mock_get.return_value = self._accounts([{"contractId": 20}, {"contractId": 10}])
+        mock_post.side_effect = lambda url, **kw: MagicMock(
+            status_code=200 if "/usage/v2/10?" in url else 502
+        )
+        assert api.get_accounts() is True
+        assert (api._contractId, api._gas_contract_id) == (10, 20)
+        assert "interval=hourly" in mock_post.call_args_list[0][0][0]
+
+    @patch("custom_components.contact_energy.api.requests.post")
+    @patch("custom_components.contact_energy.api.requests.get")
+    def test_probe_network_error_falls_back_to_listed_order(
+        self, mock_get, mock_post, api
+    ):
+        import requests
+
+        mock_get.return_value = self._accounts([{"contractId": 10}, {"contractId": 20}])
+        mock_post.side_effect = requests.ConnectionError("down")
+        assert api.get_accounts() is True
+        assert (api._contractId, api._gas_contract_id) == (10, 20)
+
+    @patch("custom_components.contact_energy.api.requests.post")
+    @patch("custom_components.contact_energy.api.requests.get")
+    def test_single_contract_is_not_probed(self, mock_get, mock_post, api):
+        mock_get.return_value = self._accounts([{"contractId": 10}])
+        assert api.get_accounts() is True
+        mock_post.assert_not_called()
