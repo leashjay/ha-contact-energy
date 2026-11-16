@@ -1,5 +1,6 @@
 """Contact Energy API."""
 
+import datetime as dt
 import logging
 
 import requests
@@ -104,18 +105,50 @@ class ContactEnergyApi:
                 return False
             self._accountId = account_id
             self._contractId = contract_id
-            # The API has no field distinguishing electricity from gas
-            # contracts. A second contract on the account is assumed to be
-            # a gas meter (billed monthly, no per-point dollarValue) — see
-            # README.md's "Known issues" section.
-            try:
-                self._gas_contract_id = contracts[1]["contractId"]
-            except IndexError, KeyError, TypeError:
-                self._gas_contract_id = ""
+            self._gas_contract_id = ""
+            ids = [c.get("contractId") for c in contracts if isinstance(c, dict)]
+            ids = [i for i in ids if i]
+            # The API has no field distinguishing electricity from gas, and the
+            # contracts are not in a fixed order: on some dual-fuel accounts
+            # the gas contract comes first. Only the electricity contract
+            # serves hourly usage, so probe for it; if no contract answers
+            # (e.g. the API is down), fall back to the listed order.
+            electricity = self._find_hourly_contract(ids) if len(ids) > 1 else ""
+            if electricity:
+                self._contractId = electricity
+                others = [i for i in ids if i != electricity]
+                self._gas_contract_id = others[0] if others else ""
+            elif len(ids) > 1 and contract_id == ids[0]:
+                self._gas_contract_id = ids[1]
             _LOGGER.debug("Retrieved accounts")
             return True
         _LOGGER.error("Failed to fetch customer accounts: HTTP %s", result.status_code)
         return False
+
+    def _find_hourly_contract(self, contract_ids):
+        """Return the first contract that serves hourly usage, or "" if none.
+
+        Probes a day far enough back to have been published (Contact Energy
+        runs about two days late). Gas contracts answer HTTP 502 here.
+        """
+        day = (dt.date.today() - dt.timedelta(days=3)).isoformat()
+        headers = {
+            "x-api-key": CONTACT_ENERGY_API_KEY,
+            "authorization": self._api_token,
+        }
+        for contract_id in contract_ids:
+            url = (
+                f"{self._url_base}/usage/v2/{contract_id}"
+                f"?ba={self._accountId}&interval=hourly&from={day}&to={day}"
+            )
+            try:
+                response = requests.post(url, headers=headers, timeout=(10, 30))
+            except requests.RequestException as err:
+                _LOGGER.debug("Contract probe failed: %s", type(err).__name__)
+                continue
+            if response.status_code == requests.codes.ok:
+                return contract_id
+        return ""
 
     def get_usage(self, year, month, day):
         """Fetch hourly usage data for a single day.
